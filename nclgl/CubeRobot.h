@@ -1,4 +1,4 @@
-# pragma once
+#pragma once
 #include "..\nclgl\scenenode.h"
 
 class CubeRobot : public SceneNode {

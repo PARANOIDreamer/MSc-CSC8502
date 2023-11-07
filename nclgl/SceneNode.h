@@ -1,4 +1,4 @@
-# pragma once
+#pragma once
 #include "Matrix4.h"
 #include "Vector3.h"
 #include "Vector4.h"
@@ -23,6 +23,19 @@ public:
 	Mesh* GetMesh() const { return mesh; }
 	void SetMesh(Mesh* m) { mesh = m; }
 
+	float GetBoundingRadius () const { return boundingRadius ;}
+	void SetBoundingRadius(float f) { boundingRadius = f; }
+
+	float GetCameraDistance() const { return distanceFromCamera; }
+	void SetCameraDistance(float f) { distanceFromCamera = f; }
+
+	void SetTexture(GLuint tex) { texture = tex; }
+	GLuint GetTexture() const { return texture; }
+
+	static bool CompareByCameraDistance(SceneNode* a, SceneNode* b) {
+		return (a->distanceFromCamera < b->distanceFromCamera) ? true : false;
+	}
+
 	void AddChild(SceneNode* s);
 	virtual void Update(float dt);
 	virtual void Draw(const OGLRenderer& r);
@@ -43,4 +56,7 @@ protected:
 	Vector3 modelScale;
 	Vector4 colour;
 	std::vector <SceneNode*> children;
+	float distanceFromCamera;
+	float boundingRadius;
+	GLuint texture;
 };

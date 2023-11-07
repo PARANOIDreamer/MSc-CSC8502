@@ -3,10 +3,13 @@
 #include <algorithm>
 
 void Camera::UpdateCamera(float dt) {
-	if (Window::GetMouse()->ButtonDown(MOUSE_LEFT)) {
-		pitch -= (Window::GetMouse()->GetRelativePosition().y);
-		yaw -= (Window::GetMouse()->GetRelativePosition().x);
-	}
+	//if (Window::GetMouse()->ButtonDown(MOUSE_LEFT)) {
+	//	pitch -= (Window::GetMouse()->GetRelativePosition().y);
+	//	yaw -= (Window::GetMouse()->GetRelativePosition().x);
+	//}
+
+	pitch -= (Window::GetMouse()->GetRelativePosition().y);
+	yaw -= (Window::GetMouse()->GetRelativePosition().x);
 
 	pitch = std::min(pitch, 90.0f);
 	pitch = std::max(pitch, -90.0f);

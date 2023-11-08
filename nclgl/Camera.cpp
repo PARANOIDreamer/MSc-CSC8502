@@ -20,12 +20,13 @@ void Camera::UpdateCamera(float dt) {
 	if (yaw > 360.0f) {
 		yaw -= 360.0f;
 	}
-	Matrix4 rotation = Matrix4::Rotation(yaw, Vector3(0, 0, -1));
 
+	Matrix4 rotation = Matrix4::Rotation(yaw, Vector3(0, 1, 0));
 	Vector3 forward = rotation * Vector3(0, 0, -1);
 	Vector3 right = rotation * Vector3(1, 0, 0);
 	
-	float speed = 30.0f * dt * 5;
+	float speed = 30.0f * dt * 50;
+
 	if (Window::GetKeyboard()->KeyDown(KEYBOARD_W)) {
 		position += forward * speed;
 	}

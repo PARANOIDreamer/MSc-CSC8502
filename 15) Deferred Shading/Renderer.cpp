@@ -157,7 +157,7 @@ void Renderer::DrawPointLights() {
 	glDepthFunc(GL_ALWAYS);
 	glDepthMask(GL_FALSE);
 
-	glUniform1i(glGetUniformLocation(pointlightShader->GetProgram(), " depthTex "), 0);
+	glUniform1i(glGetUniformLocation(pointlightShader->GetProgram(), "depthTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
 

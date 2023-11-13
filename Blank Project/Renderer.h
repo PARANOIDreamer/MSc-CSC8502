@@ -7,6 +7,7 @@ class HeightMap;
 class Mesh;
 class MeshAnimation;
 class MeshMaterial;
+const int MODEL_NUM = 32;
 
 class Renderer : public OGLRenderer {
 public:
@@ -14,19 +15,27 @@ public:
 	~Renderer(void);
 	void RenderScene() override;
 	void UpdateScene(float dt) override;
+	void LoadMesh(Mesh* mesh, MeshMaterial* material, int x);
 
 protected:
 	void DrawHeightmap();
 	void DrawWater();
 	void DrawSkybox();
 	void DrawMesh();
+	void DrawShip();
 
 	Shader* lightShader;
 	Shader* reflectShader;
 	Shader* skyboxShader;
+	Shader* modelShader;
 
 	HeightMap* heightMap;
 	Mesh* quad;
+	Mesh* robotMesh;
+	MeshMaterial* robotMaterial;
+	Mesh* shipMesh;
+	MeshMaterial* shipMaterial;
+	MeshAnimation* anim;
 
 	Light* light;
 	Camera* camera;
@@ -35,15 +44,15 @@ protected:
 	GLuint waterTex;
 	GLuint earthTex;
 	GLuint earthBump;
+	vector <GLuint> matTextures[MODEL_NUM];
 
 	float waterRotate;
 	float waterCycle;
-
-	Shader* shader;
-	Mesh* mesh;
-	MeshAnimation* anim;
-	MeshMaterial* material;
-	vector <GLuint> matTextures;
 	int currentFrame;
 	float frameTime;
+	Vector3 robotPosition;
+	float direction;
+	float move;
+	int camera_seat;
+	int scene_no;
 };

@@ -6,7 +6,6 @@
 #include "../nclgl/MeshAnimation.h"
 #include "../nclgl/MeshMaterial.h"
 
-
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	quad = Mesh::GenerateQuad();
 	heightMap = new HeightMap(TEXTUREDIR"noise1.png");
@@ -14,6 +13,16 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	earthTex = SOIL_load_OGL_texture(TEXTUREDIR"Barren Reds1.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	earthBump = SOIL_load_OGL_texture(TEXTUREDIR"Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"rusted_west.jpg", TEXTUREDIR"rusted_east.jpg", TEXTUREDIR"rusted_up.jpg", TEXTUREDIR"rusted_down.jpg", TEXTUREDIR"rusted_south.jpg", TEXTUREDIR"rusted_north.jpg", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+	//cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"rusted_up.jpg", TEXTUREDIR"rusted_up.jpg", TEXTUREDIR"rusted_up.jpg", TEXTUREDIR"rusted_up.jpg", TEXTUREDIR"rusted_up.jpg", TEXTUREDIR"rusted_up.jpg", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+
+	robotMesh = Mesh::LoadFromMeshFile("Role_T.msh");
+	anim = new MeshAnimation("Role_T.anm");
+	robotMaterial = new MeshMaterial("Role_T.mat");
+	LoadMesh(robotMesh, robotMaterial, 0);
+	shipMesh = Mesh::LoadFromMeshFile("Spaceship_Base.msh");
+	shipMaterial = new MeshMaterial("Spaceship_Base.mat");
+	LoadMesh(shipMesh, shipMaterial, 1);
+
 	if (!earthTex || !earthBump || !cubeMap || !waterTex) {
 		return;
 	}
@@ -24,7 +33,10 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	reflectShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl");
 	skyboxShader = new Shader("skyboxVertex.glsl", "skyboxFragment.glsl");
 	lightShader = new Shader("bumpVertex.glsl", "bumpFragment.glsl");
-	if (!reflectShader->LoadSuccess() || !skyboxShader->LoadSuccess() || !lightShader->LoadSuccess()) {
+
+	modelShader = new Shader("meshVertex.glsl", "bumpFragment.glsl");
+
+	if (!reflectShader->LoadSuccess() || !skyboxShader->LoadSuccess() || !lightShader->LoadSuccess() || !modelShader->LoadSuccess()) {
 		return;
 	}
 	Vector3 heightmapSize = heightMap->GetHeightmapSize();
@@ -40,25 +52,13 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	waterRotate = 0.0f;
 	waterCycle = 0.0f;
 
-	shader = new Shader("SkinningVertex.glsl", "texturedFragment.glsl");
-
-	if (!shader->LoadSuccess()) {
-		return;
-	}
-	mesh = Mesh::LoadFromMeshFile("Role_T.msh");
-	anim = new MeshAnimation("Role_T.anm");
-	material = new MeshMaterial("Role_T.mat");
-	for (int i = 0; i < mesh->GetSubMeshCount(); ++i) {
-		const MeshMaterialEntry* matEntry = material->GetMaterialForLayer(i);
-
-		const string* filename = nullptr;
-		matEntry->GetEntry("Diffuse", &filename);
-		string path = TEXTUREDIR + *filename;
-		GLuint texID = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y);
-		matTextures.emplace_back(texID);
-	}
 	currentFrame = 0;
 	frameTime = 0.0f;
+	robotPosition = Vector3(2050.0f, 50.0f, 2500.0f);
+	direction = 0.0f;
+	move = 0;
+	camera_seat = 1;
+	scene_no = 1;
 	init = true;
 }
 
@@ -71,55 +71,110 @@ Renderer ::~Renderer(void) {
 	delete lightShader;
 	delete light;
 
-	delete mesh;
+	delete robotMesh;
 	delete anim;
-	delete material;
-	delete shader;
+	delete robotMaterial;
+	delete shipMesh;
+	delete shipMaterial;
+	delete modelShader;
 }
 
 void Renderer::UpdateScene(float dt) {
-	camera->UpdateCamera(0.5);
-	viewMatrix = camera->BuildViewMatrix();
 	waterRotate += dt * 2.0f;
 	waterCycle += dt * 0.25f;
+	float bit = -100.0f;
+	if (scene_no == 1) {
+		frameTime -= dt;
+		while (frameTime < 0.0f) {
+			currentFrame = (currentFrame + 1) % anim->GetFrameCount();
+			frameTime += 1.0f / anim->GetFrameRate();
+		}
+		float robotSpeed = 0.2f;
 
-	frameTime -= dt;
-	while (frameTime < 0.0f) {
-		currentFrame = (currentFrame + 1) % anim->GetFrameCount();
-		frameTime += 1.0f / anim->GetFrameRate();
+		if (move > 100) {
+			direction = 180.0f;
+			robotPosition.x -= robotSpeed;
+			bit = 100.0f;
+			if (robotPosition.x <= 2050.0f)move = 0;
+		}
+		else {
+			move += robotSpeed;
+			direction = 0.0f;
+			bit = -100.0f;
+			robotPosition.x += robotSpeed;
+		}
 	}
+	if (camera_seat == 2) {
+		camera->UpdateCamera(0.5);
+		viewMatrix = camera->BuildViewMatrix();
+	}
+	else {
+		viewMatrix = Matrix4::Rotation(direction, Vector3(0, 1, 0)) * Matrix4::Rotation(90, Vector3(0, 1, 0)) * Matrix4::Translation(Vector3(-(robotPosition.x + bit), -100.0f, -2500.0f));
+	}
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_Q))
+		camera_seat = 2;
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_E))
+		camera_seat = 1;
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_1))
+		scene_no = 1;
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_2))
+		scene_no = 2;
 }
 
 void Renderer::RenderScene() {
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	DrawSkybox();
-	DrawHeightmap();
-	DrawWater();
-	DrawMesh();
+	if (scene_no == 1) {
+		DrawSkybox();
+		DrawHeightmap();
+		DrawWater();
+		DrawMesh();
+		DrawShip();
+	}
+	else {
+		DrawSkybox();
+	}
 }
 
 void Renderer::DrawMesh() {
-	BindShader(shader);
-	glUniform1i(glGetUniformLocation(shader->GetProgram(), "diffuseTex"), 0);
+	BindShader(modelShader);
+	glUniform1i(glGetUniformLocation(modelShader->GetProgram(), "diffuseTex"), 0);
 
-	modelMatrix = Matrix4::Translation(Vector3(2100.0f, 50.0f, 2500.0f)) * Matrix4::Scale(Vector3(20.0f, 20.0f, 20.0f)) * Matrix4::Rotation(90, Vector3(0, 1, 0));
+	modelMatrix = Matrix4::Translation(robotPosition) * Matrix4::Scale(Vector3(20.0f, 20.0f, 20.0f)) * Matrix4::Rotation(90, Vector3(0, 1, 0)) * Matrix4::Rotation(direction, Vector3(0, 1, 0));
+	glUniform3fv(glGetUniformLocation(modelShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+	SetShaderLight(*light);
 	UpdateShaderMatrices();
 
 	vector <Matrix4> frameMatrices;
 
-	const Matrix4* invBindPose = mesh->GetInverseBindPose();
+	const Matrix4* invBindPose = robotMesh->GetInverseBindPose();
 	const Matrix4* frameData = anim->GetJointData(currentFrame);
 
-	for (unsigned int i = 0; i < mesh->GetJointCount(); ++i) {
+	for (unsigned int i = 0; i < robotMesh->GetJointCount(); ++i) {
 		frameMatrices.emplace_back(frameData[i] * invBindPose[i]);
 	}
-	
-	int j = glGetUniformLocation(shader->GetProgram(), "joints");
-	glUniformMatrix4fv(j, frameMatrices.size(), false, (float*)frameMatrices.data());	
-	for (int i = 0; i < mesh->GetSubMeshCount(); ++i) {
+
+	int j = glGetUniformLocation(modelShader->GetProgram(), "joints");
+	glUniformMatrix4fv(j, frameMatrices.size(), false, (float*)frameMatrices.data());
+	for (int i = 0; i < robotMesh->GetSubMeshCount(); ++i) {
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, matTextures[i]);
-		mesh->DrawSubMesh(i);
+		glBindTexture(GL_TEXTURE_2D, matTextures[0][i]);
+		robotMesh->DrawSubMesh(i);
+	}
+}
+
+void Renderer::DrawShip() {
+	BindShader(lightShader);
+	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "diffuseTex"), 0);
+
+	modelMatrix = Matrix4::Translation(Vector3(1800.0f, 205.0f, 2500.0f)) * Matrix4::Scale(Vector3(12.0f, 12.0f, 12.0f)) * Matrix4::Rotation(60, Vector3(0, 1, 0));
+	glUniform3fv(glGetUniformLocation(lightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+	SetShaderLight(*light);
+	UpdateShaderMatrices();
+
+	for (int i = 0; i < shipMesh->GetSubMeshCount(); ++i) {
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, matTextures[1][i]);
+		shipMesh->DrawSubMesh(i);
 	}
 }
 
@@ -159,11 +214,23 @@ void Renderer::DrawWater() {
 	glBindTexture(GL_TEXTURE_2D, waterTex);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
-	
+
 	Vector3 hSize = heightMap->GetHeightmapSize();
 	modelMatrix = Matrix4::Translation(hSize * 0.48f) * Matrix4::Scale(hSize * 0.06f) * Matrix4::Rotation(90, Vector3(1, 0, 0));
 	textureMatrix = Matrix4::Translation(Vector3(waterCycle, 0.0f, waterCycle)) * Matrix4::Scale(Vector3(3, 3, 3)) * Matrix4::Rotation(waterRotate, Vector3(0, 0, 1));
 
 	UpdateShaderMatrices();
 	quad->Draw();
+}
+
+void Renderer::LoadMesh(Mesh* mesh, MeshMaterial* material, int x) {
+	for (int i = 0; i < mesh->GetSubMeshCount(); ++i) {
+		const MeshMaterialEntry* matEntry = material->GetMaterialForLayer(i);
+
+		const string* filename = nullptr;
+		matEntry->GetEntry("Diffuse", &filename);
+		string path = TEXTUREDIR + *filename;
+		GLuint texID = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y);
+		matTextures[x].emplace_back(texID);
+	}
 }

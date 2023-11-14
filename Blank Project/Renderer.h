@@ -7,7 +7,7 @@ class HeightMap;
 class Mesh;
 class MeshAnimation;
 class MeshMaterial;
-const int MODEL_NUM = 32;
+const int MODEL_NUM = 5;
 
 class Renderer : public OGLRenderer {
 public:
@@ -23,6 +23,7 @@ protected:
 	void DrawSkybox();
 	void DrawMesh();
 	void DrawShip();
+	void DrawPlanets();
 
 	Shader* lightShader;
 	Shader* reflectShader;
@@ -36,15 +37,18 @@ protected:
 	Mesh* shipMesh;
 	MeshMaterial* shipMaterial;
 	MeshAnimation* anim;
+	Mesh* planets;
 
 	Light* light;
 	Camera* camera;
 
 	GLuint cubeMap;
+	GLuint baseBump;
 	GLuint waterTex;
 	GLuint earthTex;
 	GLuint earthBump;
 	vector <GLuint> matTextures[MODEL_NUM];
+	GLuint planetTexs[3];
 
 	float waterRotate;
 	float waterCycle;

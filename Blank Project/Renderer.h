@@ -24,11 +24,16 @@ protected:
 	void DrawMesh();
 	void DrawShip();
 	void DrawPlanets();
+	void DrawPlants();
+	void DrawShadowScene();
+	//void DrawSpotlights();
 
 	Shader* lightShader;
 	Shader* reflectShader;
 	Shader* skyboxShader;
 	Shader* modelShader;
+	Shader* basicShader;
+	Shader* spotlightShader;
 
 	HeightMap* heightMap;
 	Mesh* quad;
@@ -36,8 +41,13 @@ protected:
 	MeshMaterial* robotMaterial;
 	Mesh* shipMesh;
 	MeshMaterial* shipMaterial;
+	Mesh* treeMesh;
+	MeshMaterial* treeMaterial;
+	Mesh* grassMesh;
+	MeshMaterial* grassMaterial;
 	MeshAnimation* anim;
-	Mesh* planets;
+	Mesh* spheres;
+	Mesh* spotLight;
 
 	Light* light;
 	Camera* camera;
@@ -48,7 +58,7 @@ protected:
 	GLuint earthTex;
 	GLuint earthBump;
 	vector <GLuint> matTextures[MODEL_NUM];
-	GLuint planetTexs[3];
+	GLuint sphereTexs[2];
 
 	float waterRotate;
 	float waterCycle;
@@ -57,6 +67,12 @@ protected:
 	Vector3 robotPosition;
 	float direction;
 	float move;
+	float sceneTime;
 	int camera_seat;
 	int scene_no;
+
+	GLuint shadowTex;
+	GLuint shadowFBO;
+	Shader* shadowShader;
+	Shader* sceneShader;
 };

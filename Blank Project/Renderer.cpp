@@ -6,17 +6,20 @@
 #include "../nclgl/MeshAnimation.h"
 #include "../nclgl/MeshMaterial.h"
 
+#define SHADOWSIZE 2048
+
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	quad = Mesh::GenerateQuad();
 	heightMap = new HeightMap(TEXTUREDIR"noise1.png");
-	planets = Mesh::LoadFromMeshFile("Sphere.msh");
+	spheres = Mesh::LoadFromMeshFile("Sphere.msh");
+	spotLight= Mesh::LoadFromMeshFile("Cone.msh");
 
 	waterTex = SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	earthTex = SOIL_load_OGL_texture(TEXTUREDIR"Barren Reds1.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	earthBump = SOIL_load_OGL_texture(TEXTUREDIR"Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	planetTexs[0] = SOIL_load_OGL_texture(TEXTUREDIR"planet.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	planetTexs[1] = SOIL_load_OGL_texture(TEXTUREDIR"sun.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	planetTexs[2] = SOIL_load_OGL_texture(TEXTUREDIR"sunbump.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	sphereTexs[0] = SOIL_load_OGL_texture(TEXTUREDIR"planet.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	sphereTexs[1] = SOIL_load_OGL_texture(TEXTUREDIR"sun.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	sphereTexs[2] = SOIL_load_OGL_texture(TEXTUREDIR"star.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	baseBump = SOIL_load_OGL_texture(TEXTUREDIR"Basebump.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
 	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"rusted_west.jpg", TEXTUREDIR"rusted_east.jpg", TEXTUREDIR"rusted_up.jpg", TEXTUREDIR"rusted_down.jpg", TEXTUREDIR"rusted_south.jpg", TEXTUREDIR"rusted_north.jpg", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
@@ -28,30 +31,62 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	shipMesh = Mesh::LoadFromMeshFile("Spaceship_Base.msh");
 	shipMaterial = new MeshMaterial("Spaceship_Base.mat");
 	LoadMesh(shipMesh, shipMaterial, 1);
+	treeMesh = Mesh::LoadFromMeshFile("Tree1.msh");
+	treeMaterial = new MeshMaterial("Tree1.mat");
+	LoadMesh(treeMesh, treeMaterial, 2);
+	grassMesh = Mesh::LoadFromMeshFile("GrassE.msh");
+	grassMaterial = new MeshMaterial("GrassE.mat");
+	LoadMesh(grassMesh, grassMaterial, 3);
 
-	if (!earthTex || !earthBump || !cubeMap || !waterTex || !planetTexs[0] || !planetTexs[1] || !planetTexs[2] || !baseBump) {
+	if (!earthTex || !earthBump || !cubeMap || !waterTex || !sphereTexs[0] || !sphereTexs[1] || !sphereTexs[2] || !baseBump) {
 		return;
 	}
 	SetTextureRepeating(earthTex, true);
 	SetTextureRepeating(earthBump, true);
 	SetTextureRepeating(waterTex, true);
-	SetTextureRepeating(planetTexs[0], true);
-	SetTextureRepeating(planetTexs[1], true);
-	SetTextureRepeating(planetTexs[2], true);
+	SetTextureRepeating(sphereTexs[0], true);
+	SetTextureRepeating(sphereTexs[1], true);
+	SetTextureRepeating(sphereTexs[2], true);
 	SetTextureRepeating(baseBump, true);
 
 	reflectShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl");
 	skyboxShader = new Shader("skyboxVertex.glsl", "skyboxFragment.glsl");
 	lightShader = new Shader("bumpVertex.glsl", "bumpFragment.glsl");
 	modelShader = new Shader("meshVertex.glsl", "bumpFragment.glsl");
-	if (!reflectShader->LoadSuccess() || !skyboxShader->LoadSuccess() || !lightShader->LoadSuccess() || !modelShader->LoadSuccess()) {
+	basicShader = new Shader("modelVertex.glsl", "TexturedFragment.glsl");
+	//spotlightShader = new Shader("pointlightvert.glsl", "pointlightfrag.glsl");
+
+	if (!reflectShader->LoadSuccess() || !skyboxShader->LoadSuccess() || !lightShader->LoadSuccess() || !modelShader->LoadSuccess() || !basicShader->LoadSuccess()) {
 		return;
 	}
 
 	Vector3 heightmapSize = heightMap->GetHeightmapSize();
 	camera = new Camera(-45.0f, 0.0f, heightmapSize * Vector3(0.55f, 2.0f, 0.7f));
-	light = new Light(heightmapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 1, 0.95, 1), heightmapSize.x);
+	light = new Light[3];
+	light[0] = Light(heightmapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 1, 0.95, 1), heightmapSize.x);
+	//light[1] = Light(Vector3(2000.0f, 180.0f, 3500.0f), Vector4(1, 0.8, 0, 1), heightmapSize.x);
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+
+	sceneShader = new Shader("shadowscenevert.glsl", "shadowscenefrag.glsl");
+	shadowShader = new Shader("shadowVert.glsl", "shadowFrag.glsl");
+
+	if (!sceneShader->LoadSuccess() || !shadowShader->LoadSuccess()) {
+		return;
+	}
+	glGenTextures(1, &shadowTex);
+	glBindTexture(GL_TEXTURE_2D, shadowTex);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOWSIZE, SHADOWSIZE, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glGenFramebuffers(1, &shadowFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowTex, 0);
+	glDrawBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -65,6 +100,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	robotPosition = Vector3(2050.0f, 50.0f, 2500.0f);
 	direction = 0.0f;
 	move = 0;
+	sceneTime = 0.0f;
 	camera_seat = 1;
 	scene_no = 1;
 	init = true;
@@ -78,13 +114,17 @@ Renderer ::~Renderer(void) {
 	delete skyboxShader;
 	delete lightShader;
 	delete modelShader;
-	delete light;
-	delete planets;
+	delete[] light;
+	delete spheres;
 	delete robotMesh;
 	delete anim;
 	delete robotMaterial;
 	delete shipMesh;
 	delete shipMaterial;
+	delete treeMesh;
+	delete treeMaterial;
+	delete grassMesh;
+	delete grassMaterial;
 }
 
 void Renderer::UpdateScene(float dt) {
@@ -113,7 +153,7 @@ void Renderer::UpdateScene(float dt) {
 		}
 	}
 	else {
-
+		sceneTime += dt;
 	}
 
 	if (camera_seat == 2) {
@@ -149,7 +189,10 @@ void Renderer::RenderScene() {
 		DrawHeightmap();
 		DrawWater();
 		DrawMesh();
+
+		//DrawShadowScene();
 		DrawShip();
+		DrawPlants();
 	}
 	else {
 		DrawSkybox();
@@ -158,15 +201,43 @@ void Renderer::RenderScene() {
 	}
 }
 
+void Renderer::DrawShadowScene() {
+	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, SHADOWSIZE, SHADOWSIZE);
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+	BindShader(shadowShader);
+	viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), Vector3(0, 0, 0));
+	projMatrix = Matrix4::Perspective(1, 100, 1, 45);
+	shadowMatrix = projMatrix * viewMatrix;
+	
+	
+	modelMatrix = Matrix4::Translation(Vector3(1800.0f, 205.0f, 2500.0f)) * Matrix4::Scale(Vector3(12.0f, 12.0f, 12.0f)) * Matrix4::Rotation(60, Vector3(0, 1, 0));
+	UpdateShaderMatrices();
+	for (int i = 0; i < shipMesh->GetSubMeshCount(); ++i) {
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, matTextures[1][i]);
+		shipMesh->DrawSubMesh(i);
+	}
+
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glViewport(0, 0, width, height);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 void Renderer::DrawMesh() {
 	BindShader(modelShader);
 	glUniform1i(glGetUniformLocation(modelShader->GetProgram(), "diffuseTex"), 0);
 	glUniform3fv(glGetUniformLocation(modelShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "bumpTex"), 1);
+	glUniform1i(glGetUniformLocation(modelShader->GetProgram(), "bumpTex"), 1);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, baseBump);
 
-	SetShaderLight(*light);
+	Light& l = light[0];
+	SetShaderLight(l);
 	modelMatrix = Matrix4::Translation(robotPosition) * Matrix4::Scale(Vector3(20.0f, 20.0f, 20.0f)) * Matrix4::Rotation(90, Vector3(0, 1, 0)) * Matrix4::Rotation(direction, Vector3(0, 1, 0));
 	UpdateShaderMatrices();
 
@@ -186,14 +257,18 @@ void Renderer::DrawMesh() {
 }
 
 void Renderer::DrawShip() {
-	BindShader(lightShader);
-	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "diffuseTex"), 0);
-	glUniform3fv(glGetUniformLocation(lightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "bumpTex"), 1);
+	BindShader(sceneShader);
+	glUniform1i(glGetUniformLocation(sceneShader->GetProgram(), "diffuseTex"), 0);
+	glUniform3fv(glGetUniformLocation(sceneShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+	glUniform1i(glGetUniformLocation(sceneShader->GetProgram(), "bumpTex"), 1);
+	glUniform1i(glGetUniformLocation(sceneShader->GetProgram(), "shadowTex"), 2);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, baseBump);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, shadowTex);
 
-	SetShaderLight(*light);
+	Light& l = light[0];
+	SetShaderLight(l);
 	modelMatrix = Matrix4::Translation(Vector3(1800.0f, 205.0f, 2500.0f)) * Matrix4::Scale(Vector3(12.0f, 12.0f, 12.0f)) * Matrix4::Rotation(60, Vector3(0, 1, 0));
 	UpdateShaderMatrices();
 
@@ -202,6 +277,43 @@ void Renderer::DrawShip() {
 		glBindTexture(GL_TEXTURE_2D, matTextures[1][i]);
 		shipMesh->DrawSubMesh(i);
 	}
+}
+
+void Renderer::DrawPlants() {
+	BindShader(lightShader);
+	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "diffuseTex"), 0);
+	glUniform3fv(glGetUniformLocation(lightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "bumpTex"), 1);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, baseBump);
+
+	Light& l = light[0];
+	SetShaderLight(l);
+	modelMatrix = Matrix4::Translation(Vector3(2150.0f, 50.0f, 2600.0f)) * Matrix4::Scale(Vector3(12.0f, 12.0f, 12.0f));
+	UpdateShaderMatrices();
+	for (int i = 0; i < treeMesh->GetSubMeshCount(); ++i) {
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, matTextures[2][i]);
+		treeMesh->DrawSubMesh(i);
+	}
+	for (int i = 0; i < 7; i++) {
+		for (int j = 0; j < 5; j++) {
+			modelMatrix = Matrix4::Translation(Vector3(2100.0f - i * 20.0f, 50.0f, 2600.0f + j * 20.0f)) * Matrix4::Scale(Vector3(12.0f, 12.0f, 12.0f));
+			UpdateShaderMatrices();
+			for (int i = 0; i < grassMesh->GetSubMeshCount(); ++i) {
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, matTextures[3][i]);
+				grassMesh->DrawSubMesh(i);
+			}
+		}
+	}
+
+	/*glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "diffuseTex"), 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, sphereTexs[2]);
+	modelMatrix = Matrix4::Translation(Vector3(2150.0f, 50.0f, 2600.0f)) * Matrix4::Scale(Vector3(30.0f, 30.0f, 30.0f));
+	UpdateShaderMatrices();
+	spheres->Draw();*/
 }
 
 void Renderer::DrawSkybox() {
@@ -215,7 +327,8 @@ void Renderer::DrawSkybox() {
 
 void Renderer::DrawHeightmap() {
 	BindShader(lightShader);
-	SetShaderLight(*light);
+	Light& l = light[0];
+	SetShaderLight(l);
 	glUniform3fv(glGetUniformLocation(lightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "diffuseTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
@@ -263,29 +376,50 @@ void Renderer::LoadMesh(Mesh* mesh, MeshMaterial* material, int x) {
 
 void Renderer::DrawPlanets() {
 	BindShader(lightShader);
-	SetShaderLight(*light);
+	Light& l = light[0];
+	SetShaderLight(l);
 	glUniform3fv(glGetUniformLocation(lightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "diffuseTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, planetTexs[0]);
+	glBindTexture(GL_TEXTURE_2D, sphereTexs[0]);
 	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "bumpTex"), 1);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, baseBump);
 
-	modelMatrix = Matrix4::Translation(Vector3(500.0f, 200.0f, 1000.0f)) * Matrix4::Scale(Vector3(750.0f, 750.0f, 750.0f));// *Matrix4::Rotation(60, Vector3(0, 1, 0));
+	modelMatrix = Matrix4::Translation(Vector3(500.0f, 200.0f, 1000.0f)) * Matrix4::Scale(Vector3(750.0f, 750.0f, 750.0f)) * Matrix4::Rotation(sceneTime * 10, Vector3(0, 1, 0));
 	UpdateShaderMatrices();
 
-	planets->Draw();
+	spheres->Draw();
 
-	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "diffuseTex"), 0);
+	BindShader(basicShader);
+	glUniform1i(glGetUniformLocation(basicShader->GetProgram(), "diffuseTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, planetTexs[1]);
-	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "bumpTex"), 1);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, planetTexs[2]);
+	glBindTexture(GL_TEXTURE_2D, sphereTexs[1]);
 
-	modelMatrix = Matrix4::Translation(Vector3(6500.0f, 180.0f, 3500.0f)) * Matrix4::Scale(Vector3(1000.0f, 1000.0f, 1000.0f));// *Matrix4::Rotation(60, Vector3(0, 1, 0));
+	modelMatrix = Matrix4::Translation(Vector3(6500.0f, 180.0f, 3500.0f)) * Matrix4::Scale(Vector3(1000.0f, 1000.0f, 1000.0f)) * Matrix4::Rotation(sceneTime * 10, Vector3(0, 1, 0));
 	UpdateShaderMatrices();
-
-	planets->Draw();
+	spheres->Draw();
 }
+
+//void Renderer::DrawSpotlights() {
+//	BindShader(spotlightShader);
+//
+//	glUniform1i(glGetUniformLocation(spotlightShader->GetProgram(), "depthTex"), 0);
+//	glActiveTexture(GL_TEXTURE0);
+//	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
+//
+//	glUniform1i(glGetUniformLocation(spotlightShader->GetProgram(), "normTex"), 1);
+//	glActiveTexture(GL_TEXTURE1);
+//	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
+//
+//	glUniform3fv(glGetUniformLocation(spotlightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+//
+//	glUniform2f(glGetUniformLocation(spotlightShader->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);
+//
+//	Matrix4 invViewProj = (projMatrix * viewMatrix).Inverse();
+//	glUniformMatrix4fv(glGetUniformLocation(spotlightShader->GetProgram(), "inverseProjView"), 1, false, invViewProj.values);
+//	UpdateShaderMatrices();
+//		Light& l = light[1];
+//		SetShaderLight(l);
+//		spotLight->Draw();
+//}

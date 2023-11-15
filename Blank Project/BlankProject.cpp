@@ -17,6 +17,9 @@ int main()	{
 	w.ShowOSPointer(false);
 
 	while(w.UpdateWindow()  && !Window::GetKeyboard()->KeyDown(KEYBOARD_ESCAPE)){
+		/*if (Window::GetKeyboard()->KeyDown(KEYBOARD_R)) {
+			glViewport(0, 0, 640, 720);
+		}*/
 		renderer.UpdateScene(w.GetTimer()->GetTimeDeltaSeconds());
 		renderer.RenderScene();
 		renderer.SwapBuffers();

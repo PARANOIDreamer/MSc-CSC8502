@@ -7,7 +7,9 @@ class HeightMap;
 class Mesh;
 class MeshAnimation;
 class MeshMaterial;
+
 const int MODEL_NUM = 5;
+const int Rain_NUM = 200;
 
 class Renderer : public OGLRenderer {
 public:
@@ -27,13 +29,16 @@ protected:
 	void DrawPlants();
 	void DrawShadowScene();
 	//void DrawSpotlights();
+	void DrawRain();
 
 	Shader* lightShader;
 	Shader* reflectShader;
 	Shader* skyboxShader;
 	Shader* modelShader;
 	Shader* basicShader;
-	Shader* spotlightShader;
+	Shader* groudShader;
+	//Shader* spotlightShader;
+	//Shader* rainShader;
 
 	HeightMap* heightMap;
 	Mesh* quad;
@@ -47,7 +52,8 @@ protected:
 	MeshMaterial* grassMaterial;
 	MeshAnimation* anim;
 	Mesh* spheres;
-	Mesh* spotLight;
+	//Mesh* spotLight;
+	//Mesh* rain;
 
 	Light* light;
 	Camera* camera;
@@ -59,20 +65,28 @@ protected:
 	GLuint earthBump;
 	vector <GLuint> matTextures[MODEL_NUM];
 	GLuint sphereTexs[3];
+	//GLuint rainTex;
+
+	Vector3 robotPosition;
+	Vector3 rainVert[Rain_NUM];
+	Vector3 cameraPosition;
+	Matrix4 cameraView;
 
 	float waterRotate;
 	float waterCycle;
 	int currentFrame;
 	float frameTime;
-	Vector3 robotPosition;
 	float direction;
 	float move;
 	float sceneTime;
 	int camera_seat;
 	int scene_no;
+	int screens;
+	int rain_no;
+	int timelight;
 
-	GLuint shadowTex;
+	/*GLuint shadowTex;
 	GLuint shadowFBO;
 	Shader* shadowShader;
-	Shader* sceneShader;
+	Shader* sceneShader;*/
 };

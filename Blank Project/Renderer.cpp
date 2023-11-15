@@ -17,9 +17,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	waterTex = SOIL_load_OGL_texture(TEXTUREDIR"water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	earthTex = SOIL_load_OGL_texture(TEXTUREDIR"Barren Reds1.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	earthBump = SOIL_load_OGL_texture(TEXTUREDIR"Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	sphereTexs[0] = SOIL_load_OGL_texture(TEXTUREDIR"planet.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	sphereTexs[0] = SOIL_load_OGL_texture(TEXTUREDIR"Shield.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	sphereTexs[1] = SOIL_load_OGL_texture(TEXTUREDIR"sun.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	sphereTexs[2] = SOIL_load_OGL_texture(TEXTUREDIR"star.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	sphereTexs[2] = SOIL_load_OGL_texture(TEXTUREDIR"planet.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	baseBump = SOIL_load_OGL_texture(TEXTUREDIR"Basebump.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
 	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"rusted_west.jpg", TEXTUREDIR"rusted_east.jpg", TEXTUREDIR"rusted_up.jpg", TEXTUREDIR"rusted_down.jpg", TEXTUREDIR"rusted_south.jpg", TEXTUREDIR"rusted_north.jpg", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
@@ -289,7 +289,7 @@ void Renderer::DrawPlants() {
 
 	Light& l = light[0];
 	SetShaderLight(l);
-	modelMatrix = Matrix4::Translation(Vector3(2150.0f, 50.0f, 2600.0f)) * Matrix4::Scale(Vector3(12.0f, 12.0f, 12.0f));
+	modelMatrix = Matrix4::Translation(Vector3(2140.0f, 50.0f, 2600.0f)) * Matrix4::Scale(Vector3(12.0f, 12.0f, 12.0f));
 	UpdateShaderMatrices();
 	for (int i = 0; i < treeMesh->GetSubMeshCount(); ++i) {
 		glActiveTexture(GL_TEXTURE0);
@@ -308,12 +308,12 @@ void Renderer::DrawPlants() {
 		}
 	}
 
-	/*glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "diffuseTex"), 0);
+	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "diffuseTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, sphereTexs[2]);
-	modelMatrix = Matrix4::Translation(Vector3(2150.0f, 50.0f, 2600.0f)) * Matrix4::Scale(Vector3(30.0f, 30.0f, 30.0f));
+	glBindTexture(GL_TEXTURE_2D, sphereTexs[0]);
+	modelMatrix = Matrix4::Translation(Vector3(2155.0f, 50.0f, 2625.0f)) * Matrix4::Scale(Vector3(105.0f, 105.0f, 105.0f));
 	UpdateShaderMatrices();
-	spheres->Draw();*/
+	spheres->Draw();
 }
 
 void Renderer::DrawSkybox() {
@@ -381,7 +381,7 @@ void Renderer::DrawPlanets() {
 	glUniform3fv(glGetUniformLocation(lightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "diffuseTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, sphereTexs[0]);
+	glBindTexture(GL_TEXTURE_2D, sphereTexs[2]);
 	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "bumpTex"), 1);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, baseBump);

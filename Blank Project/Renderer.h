@@ -58,7 +58,7 @@ protected:
 	GLuint earthTex;
 	GLuint earthBump;
 	vector <GLuint> matTextures[MODEL_NUM];
-	GLuint sphereTexs[2];
+	GLuint sphereTexs[3];
 
 	float waterRotate;
 	float waterCycle;

@@ -25,11 +25,19 @@ protected:
 	void DrawSkybox();
 	void DrawMesh();
 	void DrawShip();
-	void DrawPlanets();
+	void DrawPlanet();
+	void DrawSun();
 	void DrawPlants();
 	void DrawShadowScene();
-	//void DrawSpotlights();
 	void DrawRain();
+
+	void UpdateLight();
+	void DrawScene_n1();
+	void DrawScene_n2();
+
+	void PresentSun();
+	void DrawPostProcess();
+	//void DrawSpotlights();
 
 	Shader* lightShader;
 	Shader* reflectShader;
@@ -37,7 +45,7 @@ protected:
 	Shader* modelShader;
 	Shader* basicShader;
 	Shader* groudShader;
-	//Shader* spotlightShader;
+	Shader* processShader;
 	//Shader* rainShader;
 
 	HeightMap* heightMap;
@@ -65,6 +73,10 @@ protected:
 	GLuint earthBump;
 	vector <GLuint> matTextures[MODEL_NUM];
 	GLuint sphereTexs[3];
+	GLuint bufferFBO;
+	GLuint processFBO;
+	GLuint bufferColourTex[2];
+	GLuint bufferDepthTex;
 	//GLuint rainTex;
 
 	Vector3 robotPosition;

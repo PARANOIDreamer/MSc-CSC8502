@@ -25,8 +25,7 @@ protected:
 	void DrawSkybox();
 	void DrawMesh();
 	void DrawShip();
-	void DrawPlanet();
-	void DrawSun();
+	void DrawPlanets();
 	void DrawPlants();
 	void DrawShadowScene();
 	void DrawRain();
@@ -35,16 +34,17 @@ protected:
 	void DrawScene_n1();
 	void DrawScene_n2();
 
-	void PresentSun();
+	void PresentScene();
 	void DrawPostProcess();
 	//void DrawSpotlights();
+	void GenerateScreenTexture(GLuint& into, bool depth = false);
 
 	Shader* lightShader;
 	Shader* reflectShader;
 	Shader* skyboxShader;
 	Shader* modelShader;
 	Shader* basicShader;
-	Shader* groudShader;
+	Shader* groundShader;
 	Shader* processShader;
 	//Shader* rainShader;
 

@@ -23,6 +23,7 @@ protected:
 	Camera* camera;
 
 	Mesh* quad;
+	Mesh* sphere;
 	HeightMap* heightMap;
 	GLuint heightTexture;
 	GLuint bufferFBO;

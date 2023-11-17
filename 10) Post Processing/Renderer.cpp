@@ -1,9 +1,11 @@
 #include "Renderer.h"
 
-const int POST_PASSES = 0;
+const int POST_PASSES = 10;
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	camera = new Camera(-25.0f, 225.0f, Vector3(-150.0f, 250.0f, -150.0f));
 	quad = Mesh::GenerateQuad();
+	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
+
 
 	heightMap = new HeightMap(TEXTUREDIR"noise.png");
 	heightTexture = SOIL_load_OGL_texture(TEXTUREDIR"Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);

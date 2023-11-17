@@ -7,7 +7,7 @@
 #include "../nclgl/MeshMaterial.h"
 
 //#define SHADOWSIZE 2048
-const int POST_PASSES = 1;
+const int POST_PASSES = 0;
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	quad = Mesh::GenerateQuad();
@@ -507,13 +507,12 @@ void Renderer::DrawSun() {
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);	
 	
-	
 	BindShader(basicShader);
 	glUniform1i(glGetUniformLocation(basicShader->GetProgram(), "diffuseTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, sphereTexs[1]);
 
-	modelMatrix = Matrix4::Translation(Vector3(6500.0f, 180.0f, 3500.0f)) * Matrix4::Scale(Vector3(1000.0f, 1000.0f, 1000.0f)) * Matrix4::Rotation(sceneTime * 10, Vector3(0, 1, 0));
+	modelMatrix = Matrix4::Translation(Vector3(6500.0f, 180.0f, 3500.0f)) * Matrix4::Scale(Vector3(1000.0f, 1000.0f, 1000.0f));// *Matrix4::Rotation(sceneTime * 10, Vector3(0, 1, 0));
 	UpdateShaderMatrices();
 	spheres->Draw();
 
@@ -526,10 +525,7 @@ void Renderer::DrawPostProcess() {
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 	BindShader(processShader);
-	//modelMatrix.ToIdentity();
-	//viewMatrix.ToIdentity();
-	//projMatrix.ToIdentity();
-	modelMatrix = Matrix4::Translation(Vector3(6500.0f, 180.0f, 3500.0f)) * Matrix4::Scale(Vector3(1000.0f, 1000.0f, 1000.0f)) * Matrix4::Rotation(sceneTime * 10, Vector3(0, 1, 0));
+	modelMatrix = Matrix4::Translation(Vector3(6500.0f, 180.0f, 3500.0f)) * Matrix4::Scale(Vector3(1000.0f, 1000.0f, 1000.0f));// *Matrix4::Rotation(sceneTime * 10, Vector3(0, 1, 0));
 	UpdateShaderMatrices();
 
 	glDisable(GL_DEPTH_TEST);
@@ -556,14 +552,13 @@ void Renderer::PresentSun() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	//glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	BindShader(basicShader);
-	//modelMatrix.ToIdentity();
-	//viewMatrix.ToIdentity();
-	//projMatrix.ToIdentity();
-	modelMatrix = Matrix4::Translation(Vector3(6500.0f, 180.0f, 3500.0f)) * Matrix4::Scale(Vector3(1000.0f, 1000.0f, 1000.0f)) * Matrix4::Rotation(sceneTime * 10, Vector3(0, 1, 0));
+	modelMatrix = Matrix4::Translation(Vector3(6500.0f, 180.0f, 3500.0f)) * Matrix4::Scale(Vector3(1000.0f, 1000.0f, 1000.0f));// *Matrix4::Rotation(sceneTime * 10, Vector3(0, 1, 0));
 	UpdateShaderMatrices();
+	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, bufferColourTex[0]);
 	glUniform1i(glGetUniformLocation(basicShader->GetProgram(), "diffuseTex"), 0);
+	//quad->Draw();
 	spheres->Draw();
 }
 

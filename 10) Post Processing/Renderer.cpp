@@ -1,6 +1,6 @@
 #include "Renderer.h"
 
-const int POST_PASSES = 2;
+const int POST_PASSES = 0;
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	camera = new Camera(-25.0f, 225.0f, Vector3(-150.0f, 250.0f, -150.0f));
 	quad = Mesh::GenerateQuad();

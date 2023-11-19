@@ -28,6 +28,7 @@ protected:
 
 	vector < Mesh* > sceneMeshes;
 	vector < Matrix4 > sceneTransforms;
+	//Matrix4 sceneTransforms[4];
 
 	Camera* camera;
 	Light* light;

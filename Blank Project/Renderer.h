@@ -8,7 +8,7 @@ class Mesh;
 class MeshAnimation;
 class MeshMaterial;
 
-const int MODEL_NUM = 5;
+const int MODEL_NUM = 4;
 const int Rain_NUM = 200;
 
 class Renderer : public OGLRenderer {
@@ -17,27 +17,24 @@ public:
 	~Renderer(void);
 	void RenderScene() override;
 	void UpdateScene(float dt) override;
-	void LoadMesh(Mesh* mesh, MeshMaterial* material, int x);
 
 protected:
 	void DrawHeightmap();
 	void DrawWater();
 	void DrawSkybox();
-	void DrawMesh();
+	void DrawRobot();
 	void DrawShip();
 	void DrawPlanets();
 	void DrawPlants();
 	void DrawShadowScene();
 	void DrawRain();
-
+	void PresentScene();
+	void DrawPostProcess();
 	void UpdateLight();
 	void DrawScene_n1();
 	void DrawScene_n2();
-
-	void PresentScene();
-	void DrawPostProcess();
-	//void DrawSpotlights();
 	void GenerateScreenTexture(GLuint& into, bool depth = false);
+	void LoadMesh(Mesh* mesh, MeshMaterial* material, int x);
 
 	Shader* lightShader;
 	Shader* reflectShader;
@@ -46,7 +43,7 @@ protected:
 	Shader* basicShader;
 	Shader* groundShader;
 	Shader* processShader;
-	//Shader* rainShader;
+	Shader* shadowShader;
 
 	HeightMap* heightMap;
 	Mesh* quad;
@@ -60,8 +57,6 @@ protected:
 	MeshMaterial* grassMaterial;
 	MeshAnimation* anim;
 	Mesh* spheres;
-	//Mesh* spotLight;
-	//Mesh* rain;
 
 	Light* light;
 	Camera* camera;
@@ -73,11 +68,13 @@ protected:
 	GLuint earthBump;
 	vector <GLuint> matTextures[MODEL_NUM];
 	GLuint sphereTexs[3];
+
 	GLuint bufferFBO;
 	GLuint processFBO;
-	GLuint bufferColourTex[2];
+	GLuint shadowFBO;
 	GLuint bufferDepthTex;
-	//GLuint rainTex;
+	GLuint bufferColourTex[2];
+	GLuint shadowTex;
 
 	Vector3 robotPosition;
 	Vector3 rainVert[Rain_NUM];
@@ -93,12 +90,8 @@ protected:
 	float sceneTime;
 	int camera_seat;
 	int scene_no;
+	int proj_no;
 	int screens;
 	int rain_no;
 	int timelight;
-
-	/*GLuint shadowTex;
-	GLuint shadowFBO;
-	Shader* shadowShader;
-	Shader* sceneShader;*/
 };

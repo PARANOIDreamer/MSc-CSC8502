@@ -2,11 +2,15 @@
 #include "../nclgl/Light.h"
 #include "../nclgl/Camera.h"
 
-#define SHADOWSIZE 2048
+#define SHADOWSIZE 4096//2048
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
-	camera = new Camera(-30.0f, 315.0f, Vector3(-8.0f, 5.0f, 8.0f));
-	light = new Light(Vector3(-20.0f, 10.0f, -20.0f), Vector4(1, 1, 1, 1), 250.0f);
+	camera = new Camera(-90.0f, 315.0f, Vector3(-8.0f, 1500.0f, 8.0f));
+	//light = new Light(Vector3(-20.0f, 10.0f, -20.0f), Vector4(1, 1, 1, 1), 250.0f);
+	light = new Light(Vector3(-200.0f, 100.0f, -200.0f), Vector4(1, 1, 1, 1), 2500.0f);
+	//light = new Light(Vector3(-20.0f, 100.0f, -20.0f), Vector4(1, 1, 1, 1), 2500.0f);
+	//camera = new Camera(-45.0f, 0.0f, Vector3(1800.0f, 1500.0f, 2600.0f));
+	//light = new Light(Vector3(-500.0f, 500.0f, -500.0f), Vector4(1, 1, 1, 1), 6000);
 	sceneShader = new Shader("shadowscenevert.glsl", "shadowscenefrag.glsl");
 	shadowShader = new Shader("shadowVert.glsl", "shadowFrag.glsl");
 
@@ -39,7 +43,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glEnable(GL_DEPTH_TEST);
 
 	sceneTransforms.resize(4);
-	sceneTransforms[0] = Matrix4::Rotation(90, Vector3(1, 0, 0)) * Matrix4::Scale(Vector3(10, 10, 1));
+	//sceneTransforms[0] = Matrix4::Rotation(90, Vector3(1, 0, 0)) * Matrix4::Scale(Vector3(1000, 1000, 1));
+	sceneTransforms[0] = Matrix4::Translation(Vector3(500.0f, 0.0f, 500.0f)) * Matrix4::Scale(Vector3(1000.0f, 1000.0f, 1000.0f)) * Matrix4::Rotation(90, Vector3(1, 0, 0));
 	sceneTime = 0.0f;
 	init = true;
 }
@@ -57,12 +62,14 @@ Renderer ::~Renderer(void) {
 }
 
 void Renderer::UpdateScene(float dt) {
-	camera->UpdateCamera(dt);
+	camera->UpdateCamera(dt*10);
 	sceneTime += dt;
 
 	for (int i = 1; i < 4; ++i) {
-		Vector3 t = Vector3(-10 + (5 * i), 2.0f + sin(sceneTime * i), 0);
-		sceneTransforms[i] = Matrix4::Translation(t) * Matrix4::Rotation(sceneTime * 10 * i, Vector3(1, 0, 0));
+		Vector3 t = Vector3(-100 + (50 * i), 10.0f + sin(sceneTime * i), 0) +Vector3(500.0f, 5.0f, 500.0f); //(1850.0f, 0.0f, 2500.0f);
+		//Vector3 t = Vector3(-10 + (5 * i), 2.0f + sin(sceneTime * i), 0);
+		//sceneTransforms[i] = Matrix4::Translation(t) * Matrix4::Rotation(sceneTime * 10 * i, Vector3(1, 0, 0));
+		sceneTransforms[i] = Matrix4::Translation(t) * Matrix4::Rotation(sceneTime * 10 * i, Vector3(1, 0, 0)) * Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f));
 	}
 }
 
@@ -80,8 +87,8 @@ void Renderer::DrawShadowScene() {
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 	BindShader(shadowShader);
-	viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), Vector3(0, 0, 0));
-	projMatrix = Matrix4::Perspective(1, 100, 1, 45);
+	viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), Vector3(500, 5.0, 500));// *Matrix4::Rotation(-30, Vector3(1, 0, 0));
+	projMatrix = Matrix4::Perspective(1, 10000.0f, 1, 45);
 	shadowMatrix = projMatrix * viewMatrix;
 
 	for (int i = 0; i < 4; ++i) {
